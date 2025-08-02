@@ -645,21 +645,124 @@
                     <h3>Connect Google Sheets</h3>
                     <span class="close" onclick="hideSetupModal()">&times;</span>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <h4>Step 1: Create Your Google Sheet</h4>
-                    <p style="margin: 10px 0;">Click the button below to create a new Google Sheet that will store your expense data:</p>
-                    <button class="btn" onclick="createGoogleSheet()">Create Google Sheet</button>
-                </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <h4>Step 2: Get Sheet URL</h4>
-                    <p style="margin: 10px 0;">After creating the sheet, copy its URL and paste it here:</p>
+                    <h4>Method 1: Use Google Apps Script (Recommended)</h4>
+                    <p style="margin: 10px 0; font-size: 14px;">This method bypasses CORS issues and enables real-time sync:</p>
+                    <button class="btn" onclick="showScriptInstructions()">Setup Google Apps Script</button>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h4>Method 2: Direct Sheet Connection (Read-Only)</h4>
+                    <p style="margin: 10px 0; font-size: 14px;">Connect directly to a Google Sheet (may have CORS limitations):</p>
                     <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom: 10px;">
                     <button class="btn" onclick="connectToSheet()">Connect to Sheet</button>
                 </div>
 
+                <div style="margin-bottom: 20px;">
+                    <h4>Method 3: Use Sample Data</h4>
+                    <p style="margin: 10px 0; font-size: 14px;">Start with sample data for testing:</p>
+                    <button class="btn btn-secondary" onclick="loadSampleData()">Load Sample Data</button>
+                </div>
+
+                <div id="currentConnection" style="display: none; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <strong>Currently Connected:</strong><br>
+                    <span id="currentSheetInfo"></span><br>
+                    <button class="btn btn-secondary" onclick="disconnectSheet()" style="margin-top: 10px; width: auto;">Disconnect</button>
+                </div>
+
                 <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; font-size: 14px;">
                     <strong>Tip:</strong> Share the Google Sheet with your friends (give them edit access) so everyone can sync the same data!
+                </div>
+            </div>
+        </div>
+
+        <!-- Script Instructions Modal -->
+        <div class="modal" id="scriptModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Google Apps Script Setup</h3>
+                    <span class="close" onclick="hideScriptModal()">&times;</span>
+                </div>
+                
+                <div style="font-size: 14px; line-height: 1.6;">
+                    <p><strong>Step 1:</strong> Create a new Google Apps Script project at <a href="https://script.google.com" target="_blank" style="color: #00ff88;">script.google.com</a></p>
+                    
+                    <p><strong>Step 2:</strong> Replace the default code with this:</p>
+                    <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 10px;">
+function doGet(e) {
+  const sheetId = e.parameter.sheetId;
+  const action = e.parameter.action || 'read';
+  
+  if (!sheetId) {
+    return ContentService.createTextOutput('Missing sheetId parameter');
+  }
+  
+  try {
+    const spreadsheet = SpreadsheetApp.openById(sheetId);
+    
+    if (action === 'read') {
+      const data = {
+        groups: getSheetData(spreadsheet, 'Groups'),
+        expenses: getSheetData(spreadsheet, 'Expenses'), 
+        settlements: getSheetData(spreadsheet, 'Settlements')
+      };
+      
+      return ContentService
+        .createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeaders({'Access-Control-Allow-Origin': '*'});
+    }
+    
+  } catch (error) {
+    return ContentService.createTextOutput('Error: ' + error.toString());
+  }
+}
+
+function getSheetData(spreadsheet, sheetName) {
+  try {
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    if (!sheet) return [];
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    return rows.map(row => {
+      const obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = row[index] || '';
+      });
+      return obj;
+    });
+  } catch (error) {
+    return [];
+  }
+}
+                    </textarea>
+                    
+                    <p><strong>Step 3:</strong> Deploy as Web App:</p>
+                    <ul style="margin-left: 20px;">
+                        <li>Click "Deploy" → "New Deployment"</li>
+                        <li>Choose "Web app" as type</li>
+                        <li>Set "Execute as" to "Me"</li>
+                        <li>Set "Who has access" to "Anyone"</li>
+                        <li>Click "Deploy" and copy the Web App URL</li>
+                    </ul>
+                    
+                    <p><strong>Step 4:</strong> Enter your details:</p>
+                    <div class="form-group">
+                        <label>Google Apps Script URL:</label>
+                        <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+                    </div>
+                    <div class="form-group">
+                        <label>Google Sheet ID:</label>
+                        <input type="text" id="scriptSheetId" placeholder="Extract from your sheet URL">
+                    </div>
+                    
+                    <button class="btn" onclick="connectWithScript()">Connect with Apps Script</button>
                 </div>
             </div>
         </div>
@@ -823,18 +926,130 @@
         function showSetupIfNeeded() {
             if (!sheetsConfig) {
                 document.getElementById('setupBanner').style.display = 'block';
-                updateSyncStatus('Not connected', false);
+                updateSyncStatus('Click to connect Google Sheets', false);
+            } else {
+                updateCurrentConnectionDisplay();
+                updateSyncStatus('Connected - Click to change', true);
             }
         }
 
-        // Google Sheets integration
-        function createGoogleSheet() {
-            const templateUrl = 'https://docs.google.com/spreadsheets/create';
-            window.open(templateUrl, '_blank');
-            
-            alert('Please:\n1. Create a new Google Sheet\n2. Add these tab names: Groups, Expenses, Settlements\n3. Copy the sheet URL and paste it in the setup');
+        function updateCurrentConnectionDisplay() {
+            if (sheetsConfig) {
+                const display = document.getElementById('currentConnection');
+                const info = document.getElementById('currentSheetInfo');
+                
+                if (sheetsConfig.scriptUrl) {
+                    info.textContent = `Apps Script: ${sheetsConfig.scriptUrl.substring(0, 50)}...`;
+                } else if (sheetsConfig.sheetUrl) {
+                    info.textContent = `Direct Sheet: ${sheetsConfig.sheetUrl.substring(0, 50)}...`;
+                }
+                
+                display.style.display = 'block';
+            }
         }
 
+        function disconnectSheet() {
+            localStorage.removeItem('splitEasyConfig');
+            sheetsConfig = null;
+            appData = { groups: [], expenses: [], settlements: [] };
+            
+            document.getElementById('currentConnection').style.display = 'none';
+            document.getElementById('setupBanner').style.display = 'block';
+            updateSyncStatus('Disconnected - Click to connect', false);
+            
+            renderAll();
+            hideSetupModal();
+        }
+
+        function loadSampleData() {
+            appData.groups = [
+                {
+                    id: 'group1',
+                    name: 'Roommates',
+                    members: ['John Smith', 'Sarah Johnson', 'Mike Chen'],
+                    createdAt: new Date('2024-08-01')
+                },
+                {
+                    id: 'group2', 
+                    name: 'Vegas Trip',
+                    members: ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Wong'],
+                    createdAt: new Date('2024-08-01')
+                }
+            ];
+
+            appData.expenses = [
+                {
+                    id: 'exp1',
+                    groupId: 'group1',
+                    description: 'Groceries',
+                    amount: 120.50,
+                    paidBy: 'John Smith',
+                    splitType: 'equal',
+                    members: ['John Smith', 'Sarah Johnson', 'Mike Chen'],
+                    customSplits: {},
+                    category: 'Food',
+                    date: new Date('2024-08-02')
+                },
+                {
+                    id: 'exp2',
+                    groupId: 'group2',
+                    description: 'Hotel',
+                    amount: 450.00,
+                    paidBy: 'Sarah Johnson',
+                    splitType: 'equal',
+                    members: ['John Smith', 'Sarah Johnson', 'Mike Chen', 'Lisa Wong'],
+                    customSplits: {},
+                    category: 'Accommodation',
+                    date: new Date('2024-08-01')
+                }
+            ];
+
+            appData.settlements = [];
+
+            // Mark as using sample data
+            sheetsConfig = { sampleData: true };
+            saveConfig();
+            
+            document.getElementById('setupBanner').style.display = 'none';
+            updateSyncStatus('Using sample data - Click to connect sheets', true);
+            renderAll();
+            hideSetupModal();
+        }
+
+        function showScriptInstructions() {
+            document.getElementById('scriptModal').style.display = 'block';
+        }
+
+        function hideScriptModal() {
+            document.getElementById('scriptModal').style.display = 'none';
+        }
+
+        function connectWithScript() {
+            const scriptUrl = document.getElementById('scriptUrl').value.trim();
+            const sheetId = document.getElementById('scriptSheetId').value.trim();
+            
+            if (!scriptUrl || !sheetId) {
+                alert('Please enter both the Apps Script URL and Sheet ID');
+                return;
+            }
+
+            sheetsConfig = {
+                scriptUrl: scriptUrl,
+                sheetId: sheetId,
+                method: 'script'
+            };
+
+            saveConfig();
+            hideScriptModal();
+            hideSetupModal();
+            document.getElementById('setupBanner').style.display = 'none';
+            
+            loadFromGoogleSheets();
+            updateCurrentConnectionDisplay();
+            updateSyncStatus('Connected via Apps Script', true);
+        }
+
+        // Google Sheets integration
         function connectToSheet() {
             const sheetUrl = document.getElementById('sheetUrl').value.trim();
             if (!sheetUrl) {
@@ -851,7 +1066,8 @@
             const sheetId = sheetIdMatch[1];
             sheetsConfig = {
                 sheetId: sheetId,
-                sheetUrl: sheetUrl
+                sheetUrl: sheetUrl,
+                method: 'direct'
             };
 
             saveConfig();
@@ -859,12 +1075,20 @@
             document.getElementById('setupBanner').style.display = 'none';
             
             loadFromGoogleSheets();
+            updateCurrentConnectionDisplay();
             
             const newUrl = new URL(window.location);
             newUrl.searchParams.set('sheet', sheetUrl);
             window.history.replaceState({}, '', newUrl);
             
             updateSyncStatus('Connected to Google Sheets', true);
+        }
+
+        function createGoogleSheet() {
+            const templateUrl = 'https://docs.google.com/spreadsheets/create';
+            window.open(templateUrl, '_blank');
+            
+            alert('Please:\n1. Create a new Google Sheet\n2. Add these tab names: Groups, Expenses, Settlements\n3. Make it publicly viewable (Share → Anyone with the link can view)\n4. Copy the sheet URL and paste it in the setup');
         }
 
         async function loadFromGoogleSheets() {
@@ -874,40 +1098,97 @@
             updateSyncStatus('Loading from Google Sheets...', true);
 
             try {
-                // Load groups
-                const groupsUrl = `https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=0`;
-                const groupsData = await fetchCsvData(groupsUrl);
-                appData.groups = parseGroupsData(groupsData);
+                if (sheetsConfig.method === 'script') {
+                    // Use Google Apps Script method
+                    const response = await fetch(`${sheetsConfig.scriptUrl}?sheetId=${sheetsConfig.sheetId}&action=read`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Apps Script error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    appData.groups = processScriptGroups(data.groups || []);
+                    appData.expenses = processScriptExpenses(data.expenses || []);
+                    appData.settlements = processScriptSettlements(data.settlements || []);
+                    
+                } else {
+                    // Use direct CSV method (with CORS proxy)
+                    const proxyUrl = 'https://corsproxy.io/?';
+                    
+                    // Load groups
+                    const groupsUrl = `${proxyUrl}https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=0`;
+                    const groupsData = await fetchCsvData(groupsUrl);
+                    appData.groups = parseGroupsData(groupsData);
 
-                // Load expenses
-                const expensesUrl = `https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=1`;
-                const expensesData = await fetchCsvData(expensesUrl);
-                appData.expenses = parseExpensesData(expensesData);
+                    // Load expenses  
+                    const expensesUrl = `${proxyUrl}https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=1`;
+                    const expensesData = await fetchCsvData(expensesUrl);
+                    appData.expenses = parseExpensesData(expensesData);
 
-                // Load settlements
-                const settlementsUrl = `https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=2`;
-                const settlementsData = await fetchCsvData(settlementsUrl);
-                appData.settlements = parseSettlementsData(settlementsData);
+                    // Load settlements
+                    const settlementsUrl = `${proxyUrl}https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=2`;
+                    const settlementsData = await fetchCsvData(settlementsUrl);
+                    appData.settlements = parseSettlementsData(settlementsData);
+                }
 
                 updateSyncStatus('Synced with Google Sheets', true);
                 renderAll();
+                
             } catch (error) {
                 console.error('Error loading from Google Sheets:', error);
-                updateSyncStatus('Sync failed - Check sheet permissions', false);
+                updateSyncStatus('Sync failed - Click to reconnect', false);
                 
                 const errorBanner = document.createElement('div');
                 errorBanner.className = 'error-banner';
                 errorBanner.innerHTML = `
                     <strong>Sync Error:</strong> 
-                    Make sure your Google Sheet is publicly viewable (Anyone with the link can view).
-                    <br><a href="${sheetsConfig.sheetUrl}" target="_blank">Open Google Sheet</a>
+                    ${error.message.includes('CORS') ? 
+                        'CORS policy blocked direct access. Try using Google Apps Script method instead.' :
+                        'Connection failed. Check your sheet permissions and URL.'
+                    }
+                    <br><button onclick="showSetupModal()" style="margin-top: 5px; padding: 5px 10px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 4px;">Reconnect</button>
                 `;
                 document.querySelector('.container').insertBefore(errorBanner, document.querySelector('.nav-tabs'));
                 
-                setTimeout(() => errorBanner.remove(), 10000);
+                setTimeout(() => errorBanner.remove(), 15000);
             } finally {
                 setLoading(false);
             }
+        }
+
+        function processScriptGroups(groups) {
+            return groups.map(group => ({
+                id: group.id || generateId(),
+                name: group.name || '',
+                members: group.members ? group.members.split('|').map(m => m.trim()) : [],
+                createdAt: group.createdAt ? new Date(group.createdAt) : new Date()
+            }));
+        }
+
+        function processScriptExpenses(expenses) {
+            return expenses.map(expense => ({
+                id: expense.id || generateId(),
+                groupId: expense.groupId || '',
+                description: expense.description || '',
+                amount: parseFloat(expense.amount) || 0,
+                paidBy: expense.paidBy || '',
+                splitType: expense.splitType || 'equal',
+                members: expense.members ? expense.members.split('|').map(m => m.trim()) : [],
+                customSplits: expense.customSplits ? JSON.parse(expense.customSplits) : {},
+                category: expense.category || 'Other',
+                date: expense.date ? new Date(expense.date) : new Date()
+            }));
+        }
+
+        function processScriptSettlements(settlements) {
+            return settlements.map(settlement => ({
+                id: settlement.id || generateId(),
+                payer: settlement.payer || '',
+                payee: settlement.payee || '',
+                amount: parseFloat(settlement.amount) || 0,
+                date: settlement.date ? new Date(settlement.date) : new Date()
+            }));
         }
 
         async function fetchCsvData(url) {
