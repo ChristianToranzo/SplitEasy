@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplitEasy - Expense Splitter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+
+        .container {
+            max-width: 428px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            min-height: 100vh;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            opacity: 0.7;
+            font-size: 14px;
+            font-weight: 300;
+        }
+
+        .sync-status {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 8px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sync-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .setup-banner {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 12px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .setup-banner button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .setup-banner button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px 10px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.3s ease;
+            font-weight: 300;
+        }
+
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-bottom: 2px solid #ffffff;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            min-height: calc(100vh - 180px);
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: #ffffff;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .checkbox-item input {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        .checkbox-item.checked {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            font-weight: 300;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn:disabled {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: rgba(128, 128, 128, 0.2);
+            border-color: rgba(128, 128, 128, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(128, 128, 128, 0.3);
+        }
+
+        .expense-item {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .expense-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .expense-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .expense-title {
+            font-weight: 400;
+            color: #ffffff;
+        }
+
+        .expense-amount {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .expense-details {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+            font-weight: 300;
+        }
+
+        .balance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .balance-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .balance-positive {
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        .balance-negative {
+            color: #ff4757;
+            font-weight: 600;
+        }
+
+        .group-selector {
+            margin-bottom: 20px;
+        }
+
+        .group-tabs {
+            display: flex;
+            gap: 5px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .group-tab {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 300;
+        }
+
+        .group-tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: rgba(40, 40, 40, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #ffffff;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .fab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-banner {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .custom-split-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .split-input {
+            display: none;
+        }
+
+        .split-input.show {
+            display: block;
+            margin-top: 10px;
+        }
+
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+            font-weight: 300;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .nav-tab {
+                font-size: 12px;
+                padding: 12px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SplitEasy</h1>
+            <p>Split expenses with friends easily</p>
+            <div class="sync-status" id="syncStatus">
+                <div class="sync-indicator"></div>
+                <span id="syncText">Synced with Google Sheets</span>
+            </div>
+        </div>
+
+        <!-- Setup Banner (shown when not configured) -->
+        <div class="setup-banner" id="setupBanner" style="display: none;">
+            <strong>Setup Required</strong><br>
+            Connect to a Google Sheet to sync with friends
+            <br><button onclick="showSetupModal()">Setup Google Sheets</button>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-tab="expenses">Expenses</button>
+            <button class="nav-tab" data-tab="balances">Balances</button>
+            <button class="nav-tab" data-tab="groups">Groups</button>
+            <button class="nav-tab" data-tab="stats">Stats</button>
+        </div>
+
+        <!-- Expenses Tab -->
+        <div class="tab-content active" id="expenses">
+            <div class="group-selector">
+                <div class="group-tabs" id="expenseGroupTabs">
+                    <button class="group-tab active" data-group="all">All Groups</button>
+                </div>
+            </div>
+            
+            <div id="expensesList">
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 10px;">−</div>
+                    <h3>No expenses yet</h3>
+                    <p>Tap the + button to add your first expense</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balances Tab -->
+        <div class="tab-content" id="balances">
+            <div class="group-selector">
+                <div class="group-tabs" id="balanceGroupTabs">
+                    <button class="group-tab active" data-group="all">All Groups</button>
+                </div>
+            </div>
+
+            <div id="balancesList">
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 10px;">⚖</div>
+                    <h3>All settled up!</h3>
+                    <p>No outstanding balances</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups Tab -->
+        <div class="tab-content" id="groups">
+            <div id="groupsList">
+                <div class="empty-state">
+                    <div style="font-size: 48px; margin-bottom: 10px;">⚪</div>
+                    <h3>No groups yet</h3>
+                    <p>Create a group to start splitting expenses</p>
+                </div>
+            </div>
+            <button class="btn" onclick="showCreateGroupModal()">+ Create New Group</button>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div class="tab-content" id="stats">
+            <div class="statistics" id="statisticsContainer">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalExpenses">$0</div>
+                    <div class="stat-label">Total Expenses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalGroups">0</div>
+                    <div class="stat-label">Groups</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="outstandingBalance">$0</div>
+                    <div class="stat-label">Outstanding</div>
+                </div>
+            </div>
+            
+            <div id="categoryBreakdown">
+                <h3>Spending by Category</h3>
+                <div id="categoryList"></div>
+            </div>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button class="fab" onclick="showAddExpenseModal()">+</button>
+
+        <!-- Setup Modal -->
+        <div class="modal" id="setupModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Connect Google Sheets</h3>
+                    <span class="close" onclick="hideSetupModal()">&times;</span>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <h4>Step 1: Create Your Google Sheet</h4>
+                    <p style="margin: 10px 0;">Click the button below to create a new Google Sheet that will store your expense data:</p>
+                    <button class="btn" onclick="createGoogleSheet()">Create Google Sheet</button>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4>Step 2: Get Sheet URL</h4>
+                    <p style="margin: 10px 0;">After creating the sheet, copy its URL and paste it here:</p>
+                    <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." style="margin-bottom: 10px;">
+                    <button class="btn" onclick="connectToSheet()">Connect to Sheet</button>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; font-size: 14px;">
+                    <strong>Tip:</strong> Share the Google Sheet with your friends (give them edit access) so everyone can sync the same data!
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Expense Modal -->
+        <div class="modal" id="addExpenseModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Expense</h3>
+                    <span class="close" onclick="hideAddExpenseModal()">&times;</span>
+                </div>
+                <form id="expenseForm">
+                    <div class="form-group">
+                        <label>Group</label>
+                        <select id="expenseGroup" required>
+                            <option value="">Select a group</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="expenseDescription" placeholder="What was this for?" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" id="expenseAmount" placeholder="0.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Who paid?</label>
+                        <select id="expensePaidBy" required>
+                            <option value="">Select who paid</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Split type</label>
+                        <select id="expenseSplitType" onchange="toggleSplitInput()">
+                            <option value="equal">Split equally</option>
+                            <option value="custom">Custom amounts</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Who should pay?</label>
+                        <div class="checkbox-group" id="expenseMembers"></div>
+                    </div>
+                    <div class="split-input" id="customSplitContainer">
+                        <label>Custom amounts:</label>
+                        <div id="customSplitInputs"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="expenseCategory">
+                            <option value="Food">Food & Dining</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Accommodation">Accommodation</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Shopping">Shopping</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn" id="addExpenseBtn">Add Expense</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Create Group Modal -->
+        <div class="modal" id="createGroupModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Create New Group</h3>
+                    <span class="close" onclick="hideCreateGroupModal()">&times;</span>
+                </div>
+                <form id="groupForm">
+                    <div class="form-group">
+                        <label>Group Name</label>
+                        <input type="text" id="groupName" placeholder="e.g., Roommates, Trip to Paris" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Members (one per line)</label>
+                        <textarea id="groupMembers" placeholder="John Smith&#10;Sarah Johnson&#10;Mike Chen" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn" id="createGroupBtn">Create Group</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settle Up Modal -->
+        <div class="modal" id="settleModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settle Up</h3>
+                    <span class="close" onclick="hideSettleModal()">&times;</span>
+                </div>
+                <form id="settleForm">
+                    <div class="form-group">
+                        <label>From</label>
+                        <select id="settlePayer" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>To</label>
+                        <select id="settlePayee" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Amount</label>
+                        <input type="number" id="settleAmount" step="0.01" min="0" required>
+                    </div>
+                    <button type="submit" class="btn" id="settleBtn">Record Payment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let appData = {
+            groups: [],
+            expenses: [],
+            settlements: []
+        };
+
+        let currentTab = 'expenses';
+        let currentGroup = 'all';
+        let sheetsConfig = null;
+        let isLoading = false;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            setupEventListeners();
+            
+            if (sheetsConfig) {
+                loadFromGoogleSheets();
+            } else {
+                checkUrlForSheetId();
+                showSetupIfNeeded();
+            }
+            
+            renderAll();
+        });
+
+        // Configuration management
+        function loadConfig() {
+            const stored = localStorage.getItem('splitEasyConfig');
+            if (stored) {
+                sheetsConfig = JSON.parse(stored);
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('splitEasyConfig', JSON.stringify(sheetsConfig));
+        }
+
+        function checkUrlForSheetId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sheetUrl = urlParams.get('sheet');
+            if (sheetUrl) {
+                document.getElementById('sheetUrl').value = sheetUrl;
+                connectToSheet();
+            }
+        }
+
+        function showSetupIfNeeded() {
+            if (!sheetsConfig) {
+                document.getElementById('setupBanner').style.display = 'block';
+                updateSyncStatus('Not connected', false);
+            }
+        }
+
+        // Google Sheets integration
+        function createGoogleSheet() {
+            const templateUrl = 'https://docs.google.com/spreadsheets/create';
+            window.open(templateUrl, '_blank');
+            
+            alert('Please:\n1. Create a new Google Sheet\n2. Add these tab names: Groups, Expenses, Settlements\n3. Copy the sheet URL and paste it in the setup');
+        }
+
+        function connectToSheet() {
+            const sheetUrl = document.getElementById('sheetUrl').value.trim();
+            if (!sheetUrl) {
+                alert('Please enter a Google Sheets URL');
+                return;
+            }
+
+            const sheetIdMatch = sheetUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (!sheetIdMatch) {
+                alert('Invalid Google Sheets URL. Please make sure it\'s a valid Google Sheets link.');
+                return;
+            }
+
+            const sheetId = sheetIdMatch[1];
+            sheetsConfig = {
+                sheetId: sheetId,
+                sheetUrl: sheetUrl
+            };
+
+            saveConfig();
+            hideSetupModal();
+            document.getElementById('setupBanner').style.display = 'none';
+            
+            loadFromGoogleSheets();
+            
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('sheet', sheetUrl);
+            window.history.replaceState({}, '', newUrl);
+            
+            updateSyncStatus('Connected to Google Sheets', true);
+        }
+
+        async function loadFromGoogleSheets() {
+            if (!sheetsConfig) return;
+            
+            setLoading(true);
+            updateSyncStatus('Loading from Google Sheets...', true);
+
+            try {
+                // Load groups
+                const groupsUrl = `https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=0`;
+                const groupsData = await fetchCsvData(groupsUrl);
+                appData.groups = parseGroupsData(groupsData);
+
+                // Load expenses
+                const expensesUrl = `https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=1`;
+                const expensesData = await fetchCsvData(expensesUrl);
+                appData.expenses = parseExpensesData(expensesData);
+
+                // Load settlements
+                const settlementsUrl = `https://docs.google.com/spreadsheets/d/${sheetsConfig.sheetId}/export?format=csv&gid=2`;
+                const settlementsData = await fetchCsvData(settlementsUrl);
+                appData.settlements = parseSettlementsData(settlementsData);
+
+                updateSyncStatus('Synced with Google Sheets', true);
+                renderAll();
+            } catch (error) {
+                console.error('Error loading from Google Sheets:', error);
+                updateSyncStatus('Sync failed - Check sheet permissions', false);
+                
+                const errorBanner = document.createElement('div');
+                errorBanner.className = 'error-banner';
+                errorBanner.innerHTML = `
+                    <strong>Sync Error:</strong> 
+                    Make sure your Google Sheet is publicly viewable (Anyone with the link can view).
+                    <br><a href="${sheetsConfig.sheetUrl}" target="_blank">Open Google Sheet</a>
+                `;
+                document.querySelector('.container').insertBefore(errorBanner, document.querySelector('.nav-tabs'));
+                
+                setTimeout(() => errorBanner.remove(), 10000);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function fetchCsvData(url) {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.text();
+        }
+
+        function parseGroupsData(csvData) {
+            const lines = csvData.split('\n').filter(line => line.trim());
+            const groups = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseCsvLine(lines[i]);
+                if (cols[0] && cols[1]) {
+                    groups.push({
+                        id: cols[0],
+                        name: cols[1],
+                        members: cols[2] ? cols[2].split('|').map(m => m.trim()) : [],
+                        createdAt: cols[3] ? new Date(cols[3]) : new Date()
+                    });
+                }
+            }
+            
+            return groups;
+        }
+
+        function parseExpensesData(csvData) {
+            const lines = csvData.split('\n').filter(line => line.trim());
+            const expenses = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseCsvLine(lines[i]);
+                if (cols[0] && cols[1]) {
+                    expenses.push({
+                        id: cols[0],
+                        groupId: cols[1],
+                        description: cols[2] || '',
+                        amount: parseFloat(cols[3]) || 0,
+                        paidBy: cols[4] || '',
+                        splitType: cols[5] || 'equal',
+                        members: cols[6] ? cols[6].split('|').map(m => m.trim()) : [],
+                        customSplits: cols[7] ? JSON.parse(cols[7]) : {},
+                        category: cols[8] || 'Other',
+                        date: cols[9] ? new Date(cols[9]) : new Date()
+                    });
+                }
+            }
+            
+            return expenses;
+        }
+
+        function parseSettlementsData(csvData) {
+            const lines = csvData.split('\n').filter(line => line.trim());
+            const settlements = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseCsvLine(lines[i]);
+                if (cols[0] && cols[1]) {
+                    settlements.push({
+                        id: cols[0],
+                        payer: cols[1],
+                        payee: cols[2] || '',
+                        amount: parseFloat(cols[3]) || 0,
+                        date: cols[4] ? new Date(cols[4]) : new Date()
+                    });
+                }
+            }
+            
+            return settlements;
+        }
+
+        function parseCsvLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current.trim());
+            return result;
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    switchTab(e.target.dataset.tab);
+                });
+            });
+
+            document.getElementById('expenseForm').addEventListener('submit', handleAddExpense);
+            document.getElementById('groupForm').addEventListener('submit', handleCreateGroup);
+            document.getElementById('settleForm').addEventListener('submit', handleSettlement);
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'expenses') {
+                renderExpenses();
+            } else if (tabName === 'balances') {
+                renderBalances();
+            } else if (tabName === 'groups') {
+                renderGroups();
+            } else if (tabName === 'stats') {
+                renderStatistics();
+            }
+        }
+
+        async function handleCreateGroup(e) {
+            e.preventDefault();
+            
+            if (isLoading) return;
+            
+            const name = document.getElementById('groupName').value.trim();
+            const membersText = document.getElementById('groupMembers').value.trim();
+            const members = membersText.split('\n').map(m => m.trim()).filter(m => m);
+
+            if (members.length < 2) {
+                alert('Please add at least 2 members');
+                return;
+            }
+
+            setButtonLoading('createGroupBtn', true);
+
+            const group = {
+                id: generateId(),
+                name: name,
+                members: members,
+                createdAt: new Date()
+            };
+
+            appData.groups.push(group);
+            renderAll();
+            hideCreateGroupModal();
+            document.getElementById('groupForm').reset();
+            
+            setButtonLoading('createGroupBtn', false);
+        }
+
+        async function handleAddExpense(e) {
+            e.preventDefault();
+            
+            if (isLoading) return;
+            
+            const groupId = document.getElementById('expenseGroup').value;
+            const description = document.getElementById('expenseDescription').value.trim();
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const paidBy = document.getElementById('expensePaidBy').value;
+            const splitType = document.getElementById('expenseSplitType').value;
+            const category = document.getElementById('expenseCategory').value;
+
+            const memberCheckboxes = document.querySelectorAll('#expenseMembers input[type="checkbox"]:checked');
+            const members = Array.from(memberCheckboxes).map(cb => cb.value);
+
+            if (members.length === 0) {
+                alert('Please select at least one person to split with');
+                return;
+            }
+
+            let customSplits = {};
+            if (splitType === 'custom') {
+                const customInputs = document.querySelectorAll('#customSplitInputs input');
+                let totalCustom = 0;
+                customInputs.forEach(input => {
+                    const memberName = input.dataset.member;
+                    const value = parseFloat(input.value) || 0;
+                    if (members.includes(memberName)) {
+                        customSplits[memberName] = value;
+                        totalCustom += value;
+                    }
+                });
+
+                if (Math.abs(totalCustom - amount) > 0.01) {
+                    alert(`Custom amounts (${totalCustom.toFixed(2)}) don't match total amount (${amount.toFixed(2)})`);
+                    return;
+                }
+            }
+
+            setButtonLoading('addExpenseBtn', true);
+
+            const expense = {
+                id: generateId(),
+                groupId: groupId,
+                description: description,
+                amount: amount,
+                paidBy: paidBy,
+                splitType: splitType,
+                members: members,
+                customSplits: customSplits,
+                category: category,
+                date: new Date()
+            };
+
+            appData.expenses.push(expense);
+            renderAll();
+            hideAddExpenseModal();
+            document.getElementById('expenseForm').reset();
+            document.getElementById('customSplitContainer').classList.remove('show');
+            
+            setButtonLoading('addExpenseBtn', false);
+        }
+
+        async function handleSettlement(e) {
+            e.preventDefault();
+            
+            if (isLoading) return;
+            
+            const payer = document.getElementById('settlePayer').value;
+            const payee = document.getElementById('settlePayee').value;
+            const amount = parseFloat(document.getElementById('settleAmount').value);
+
+            setButtonLoading('settleBtn', true);
+
+            const settlement = {
+                id: generateId(),
+                payer: payer,
+                payee: payee,
+                amount: amount,
+                date: new Date()
+            };
+
+            appData.settlements.push(settlement);
+            renderAll();
+            hideSettleModal();
+            document.getElementById('settleForm').reset();
+            
+            setButtonLoading('settleBtn', false);
+        }
+
+        function calculateBalances() {
+            const balances = {};
+            
+            appData.groups.forEach(group => {
+                group.members.forEach(member => {
+                    if (!balances[member]) {
+                        balances[member] = {};
+                    }
+                    group.members.forEach(otherMember => {
+                        if (member !== otherMember && !balances[member][otherMember]) {
+                            balances[member][otherMember] = 0;
+                        }
+                    });
+                });
+            });
+
+            appData.expenses.forEach(expense => {
+                const group = appData.groups.find(g => g.id === expense.groupId);
+                if (!group) return;
+
+                const shares = calculateExpenseShares(expense);
+                
+                Object.entries(shares).forEach(([member, share]) => {
+                    if (member !== expense.paidBy && share > 0) {
+                        if (!balances[member]) balances[member] = {};
+                        if (!balances[member][expense.paidBy]) balances[member][expense.paidBy] = 0;
+                        if (!balances[expense.paidBy]) balances[expense.paidBy] = {};
+                        if (!balances[expense.paidBy][member]) balances[expense.paidBy][member] = 0;
+                        
+                        balances[member][expense.paidBy] += share;
+                    }
+                });
+            });
+
+            appData.settlements.forEach(settlement => {
+                if (!balances[settlement.payer]) balances[settlement.payer] = {};
+                if (!balances[settlement.payee]) balances[settlement.payee] = {};
+                if (!balances[settlement.payer][settlement.payee]) balances[settlement.payer][settlement.payee] = 0;
+                if (!balances[settlement.payee][settlement.payer]) balances[settlement.payee][settlement.payer] = 0;
+                
+                balances[settlement.payer][settlement.payee] -= settlement.amount;
+            });
+
+            const netBalances = [];
+            Object.entries(balances).forEach(([person1, debts]) => {
+                Object.entries(debts).forEach(([person2, amount]) => {
+                    if (amount > 0.01) {
+                        const reverseAmount = balances[person2] && balances[person2][person1] ? balances[person2][person1] : 0;
+                        const netAmount = amount - reverseAmount;
+                        
+                        if (netAmount > 0.01) {
+                            netBalances.push({
+                                debtor: person1,
+                                creditor: person2,
+                                amount: netAmount
+                            });
+                        }
+                    }
+                });
+            });
+
+            return netBalances;
+        }
+
+        function calculateExpenseShares(expense) {
+            const shares = {};
+            
+            if (expense.splitType === 'equal') {
+                const shareAmount = expense.amount / expense.members.length;
+                expense.members.forEach(member => {
+                    shares[member] = shareAmount;
+                });
+            } else if (expense.splitType === 'custom') {
+                expense.members.forEach(member => {
+                    shares[member] = expense.customSplits[member] || 0;
+                });
+            }
+            
+            return shares;
+        }
+
+        function renderAll() {
+            renderGroupTabs();
+            renderExpenseGroupSelector();
+            renderExpenses();
+            renderBalances();
+            renderGroups();
+            renderStatistics();
+        }
+
+        function renderGroupTabs() {
+            const expenseTabs = document.getElementById('expenseGroupTabs');
+            const balanceTabs = document.getElementById('balanceGroupTabs');
+            
+            let tabsHtml = '<button class="group-tab active" data-group="all">All Groups</button>';
+            appData.groups.forEach(group => {
+                const isActive = currentGroup === group.id ? 'active' : '';
+                tabsHtml += `<button class="group-tab ${isActive}" data-group="${group.id}">${group.name}</button>`;
+            });
+            
+            expenseTabs.innerHTML = tabsHtml;
+            balanceTabs.innerHTML = tabsHtml;
+            
+            [expenseTabs, balanceTabs].forEach(container => {
+                container.querySelectorAll('.group-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        currentGroup = e.target.dataset.group;
+                        updateGroupTabsActive(container);
+                        if (currentTab === 'expenses') renderExpenses();
+                        if (currentTab === 'balances') renderBalances();
+                    });
+                });
+            });
+        }
+
+        function updateGroupTabsActive(container) {
+            container.querySelectorAll('.group-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.dataset.group === currentGroup) {
+                    tab.classList.add('active');
+                }
+            });
+        }
+
+        function renderExpenseGroupSelector() {
+            const select = document.getElementById('expenseGroup');
+            select.innerHTML = '<option value="">Select a group</option>';
+            appData.groups.forEach(group => {
+                select.innerHTML += `<option value="${group.id}">${group.name}</option>`;
+            });
+        }
+
+        function renderExpenses() {
+            const container = document.getElementById('expensesList');
+            let expenses = appData.expenses;
+            
+            if (currentGroup !== 'all') {
+                expenses = expenses.filter(exp => exp.groupId === currentGroup);
+            }
+            
+            if (expenses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 48px; margin-bottom: 10px;">−</div>
+                        <h3>No expenses yet</h3>
+                        <p>Tap the + button to add your first expense</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            expenses.sort((a, b) => b.date - a.date);
+            
+            let html = '';
+            expenses.forEach(expense => {
+                const group = appData.groups.find(g => g.id === expense.groupId);
+                const groupName = group ? group.name : 'Unknown Group';
+                const shares = calculateExpenseShares(expense);
+                const memberList = Object.entries(shares)
+                    .map(([member, amount]) => `${member}: ${amount.toFixed(2)}`)
+                    .join(', ');
+                
+                html += `
+                    <div class="expense-item">
+                        <div class="expense-header">
+                            <div class="expense-title">${expense.description}</div>
+                            <div class="expense-amount">${expense.amount.toFixed(2)}</div>
+                        </div>
+                        <div class="expense-details">
+                            <div>Paid by ${expense.paidBy}</div>
+                            <div>Group: ${groupName}</div>
+                            <div>Date: ${expense.date.toLocaleDateString()}</div>
+                            <div>Category: ${expense.category}</div>
+                            <div style="margin-top: 5px; font-size: 12px;">Split: ${memberList}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function renderBalances() {
+            const container = document.getElementById('balancesList');
+            const balances = calculateBalances();
+            
+            let filteredBalances = balances;
+            if (currentGroup !== 'all') {
+                const group = appData.groups.find(g => g.id === currentGroup);
+                if (group) {
+                    filteredBalances = balances.filter(balance => 
+                        group.members.includes(balance.debtor) && 
+                        group.members.includes(balance.creditor)
+                    );
+                }
+            }
+            
+            if (filteredBalances.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 48px; margin-bottom: 10px;">⚖</div>
+                        <h3>All settled up!</h3>
+                        <p>No outstanding balances</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            filteredBalances.forEach(balance => {
+                html += `
+                    <div class="balance-item">
+                        <div>
+                            <strong>${balance.debtor}</strong> owes <strong>${balance.creditor}</strong>
+                        </div>
+                        <div>
+                            <span class="balance-negative">${balance.amount.toFixed(2)}</span>
+                            <button class="btn btn-secondary" style="margin-left: 10px; padding: 5px 10px; font-size: 12px;" 
+                                    onclick="showSettleModal('${balance.debtor}', '${balance.creditor}', ${balance.amount})">
+                                Settle Up
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function renderGroups() {
+            const container = document.getElementById('groupsList');
+            
+            if (appData.groups.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 48px; margin-bottom: 10px;">⚪</div>
+                        <h3>No groups yet</h3>
+                        <p>Create a group to start splitting expenses</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            appData.groups.forEach(group => {
+                const expenseCount = appData.expenses.filter(exp => exp.groupId === group.id).length;
+                const totalAmount = appData.expenses
+                    .filter(exp => exp.groupId === group.id)
+                    .reduce((sum, exp) => sum + exp.amount, 0);
+                
+                html += `
+                    <div class="expense-item">
+                        <div class="expense-header">
+                            <div class="expense-title">${group.name}</div>
+                            <div class="expense-amount">${group.members.length} members</div>
+                        </div>
+                        <div class="expense-details">
+                            <div>Members: ${group.members.join(', ')}</div>
+                            <div>Stats: ${expenseCount} expenses · ${totalAmount.toFixed(2)} total</div>
+                            <div>Created: ${group.createdAt.toLocaleDateString()}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function renderStatistics() {
+            const totalExpenses = appData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+            const totalGroups = appData.groups.length;
+            const balances = calculateBalances();
+            const outstandingBalance = balances.reduce((sum, balance) => sum + balance.amount, 0);
+            
+            document.getElementById('totalExpenses').textContent = `${totalExpenses.toFixed(2)}`;
+            document.getElementById('totalGroups').textContent = totalGroups;
+            document.getElementById('outstandingBalance').textContent = `${outstandingBalance.toFixed(2)}`;
+            
+            const categoryTotals = {};
+            appData.expenses.forEach(expense => {
+                categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+            });
+            
+            const categoryContainer = document.getElementById('categoryList');
+            let categoryHtml = '';
+            Object.entries(categoryTotals)
+                .sort(([,a], [,b]) => b - a)
+                .forEach(([category, amount]) => {
+                    const percentage = totalExpenses > 0 ? (amount / totalExpenses * 100).toFixed(1) : 0;
+                    categoryHtml += `
+                        <div class="balance-item">
+                            <div>${category}</div>
+                            <div>
+                                <span>${amount.toFixed(2)} (${percentage}%)</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            
+            categoryContainer.innerHTML = categoryHtml || '<p>No expenses yet</p>';
+        }
+
+        // Modal functions
+        function showSetupModal() {
+            document.getElementById('setupModal').style.display = 'block';
+        }
+
+        function hideSetupModal() {
+            document.getElementById('setupModal').style.display = 'none';
+        }
+
+        function showAddExpenseModal() {
+            if (!sheetsConfig) {
+                alert('Please connect to Google Sheets first');
+                showSetupModal();
+                return;
+            }
+            
+            const modal = document.getElementById('addExpenseModal');
+            modal.style.display = 'block';
+            
+            renderExpenseGroupSelector();
+            updateMemberDropdowns();
+        }
+
+        function hideAddExpenseModal() {
+            document.getElementById('addExpenseModal').style.display = 'none';
+        }
+
+        function showCreateGroupModal() {
+            if (!sheetsConfig) {
+                alert('Please connect to Google Sheets first');
+                showSetupModal();
+                return;
+            }
+            
+            document.getElementById('createGroupModal').style.display = 'block';
+        }
+
+        function hideCreateGroupModal() {
+            document.getElementById('createGroupModal').style.display = 'none';
+        }
+
+        function showSettleModal(payer, payee, amount) {
+            if (!sheetsConfig) {
+                alert('Please connect to Google Sheets first');
+                showSetupModal();
+                return;
+            }
+            
+            const modal = document.getElementById('settleModal');
+            modal.style.display = 'block';
+            
+            const allMembers = new Set();
+            appData.groups.forEach(group => {
+                group.members.forEach(member => allMembers.add(member));
+            });
+            
+            const payerSelect = document.getElementById('settlePayer');
+            const payeeSelect = document.getElementById('settlePayee');
+            
+            payerSelect.innerHTML = '';
+            payeeSelect.innerHTML = '';
+            
+            allMembers.forEach(member => {
+                payerSelect.innerHTML += `<option value="${member}" ${member === payer ? 'selected' : ''}>${member}</option>`;
+                payeeSelect.innerHTML += `<option value="${member}" ${member === payee ? 'selected' : ''}>${member}</option>`;
+            });
+            
+            document.getElementById('settleAmount').value = amount.toFixed(2);
+        }
+
+        function hideSettleModal() {
+            document.getElementById('settleModal').style.display = 'none';
+        }
+
+        function updateMemberDropdowns() {
+            const groupSelect = document.getElementById('expenseGroup');
+            const paidBySelect = document.getElementById('expensePaidBy');
+            const membersContainer = document.getElementById('expenseMembers');
+            
+            groupSelect.addEventListener('change', function() {
+                const selectedGroupId = this.value;
+                const group = appData.groups.find(g => g.id === selectedGroupId);
+                
+                if (group) {
+                    paidBySelect.innerHTML = '<option value="">Select who paid</option>';
+                    group.members.forEach(member => {
+                        paidBySelect.innerHTML += `<option value="${member}">${member}</option>`;
+                    });
+                    
+                    membersContainer.innerHTML = '';
+                    group.members.forEach(member => {
+                        const checkbox = document.createElement('div');
+                        checkbox.className = 'checkbox-item';
+                        checkbox.innerHTML = `
+                            <input type="checkbox" value="${member}" id="member_${member.replace(/\s+/g, '_')}">
+                            <label for="member_${member.replace(/\s+/g, '_')}">${member}</label>
+                        `;
+                        
+                        checkbox.addEventListener('click', function() {
+                            const input = this.querySelector('input');
+                            input.checked = !input.checked;
+                            this.classList.toggle('checked', input.checked);
+                            updateCustomSplitInputs();
+                        });
+                        
+                        membersContainer.appendChild(checkbox);
+                    });
+                }
+            });
+        }
+
+        function toggleSplitInput() {
+            const splitType = document.getElementById('expenseSplitType').value;
+            const customContainer = document.getElementById('customSplitContainer');
+            
+            if (splitType === 'custom') {
+                customContainer.classList.add('show');
+                updateCustomSplitInputs();
+            } else {
+                customContainer.classList.remove('show');
+            }
+        }
+
+        function updateCustomSplitInputs() {
+            const container = document.getElementById('customSplitInputs');
+            const selectedMembers = Array.from(document.querySelectorAll('#expenseMembers input:checked')).map(cb => cb.value);
+            
+            container.innerHTML = '';
+            selectedMembers.forEach(member => {
+                const inputDiv = document.createElement('div');
+                inputDiv.className = 'custom-split-item';
+                inputDiv.innerHTML = `
+                    <label style="flex: 1;">${member}:</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" data-member="${member}" style="flex: 1;">
+                `;
+                container.appendChild(inputDiv);
+            });
+        }
+
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        function setLoading(loading) {
+            isLoading = loading;
+        }
+
+        function setButtonLoading(buttonId, loading) {
+            const button = document.getElementById(buttonId);
+            if (loading) {
+                button.disabled = true;
+                button.innerHTML = '<div class="loading"></div> Saving...';
+            } else {
+                button.disabled = false;
+                if (buttonId === 'addExpenseBtn') button.innerHTML = 'Add Expense';
+                if (buttonId === 'createGroupBtn') button.innerHTML = 'Create Group';
+                if (buttonId === 'settleBtn') button.innerHTML = 'Record Payment';
+            }
+        }
+
+        function updateSyncStatus(text, success) {
+            const statusEl = document.getElementById('syncText');
+            const indicatorEl = document.querySelector('.sync-indicator');
+            
+            statusEl.textContent = text;
+            
+            if (success) {
+                indicatorEl.style.background = '#00ff88';
+            } else {
+                indicatorEl.style.background = '#ff4757';
+            }
+        }
+
+        setInterval(() => {
+            if (sheetsConfig && !isLoading) {
+                loadFromGoogleSheets();
+            }
+        }, 30000);
+
+        window.addEventListener('click', function(e) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
